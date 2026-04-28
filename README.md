@@ -70,3 +70,31 @@ Full thread:
 ## Usage
 
 Find any message in Slack → click **"..."** → **Log FAQ** → Claude routine fires automatically.
+
+## Keeping secrets secure
+
+**Never put tokens or secrets in any file inside the repo.** Anything committed to GitHub — even a private repo — is a risk. Always add secrets through Netlify's Environment Variables UI only.
+
+If you're working with Claude Code locally and want a safe place to store your tokens for reference (so you or an AI assistant can use them without exposing them in the codebase), create a local secrets file outside any repo:
+
+```
+~/.claude/secrets.json
+```
+
+Example format:
+```json
+{
+  "slack-claude-bridge": {
+    "SLACK_SIGNING_SECRET": "...",
+    "CLAUDE_ROUTINE_URL": "...",
+    "CLAUDE_ROUTINE_TOKEN": "...",
+    "SLACK_BOT_TOKEN": "...",
+    "netlify": {
+      "pat": "...",
+      "site_id": "..."
+    }
+  }
+}
+```
+
+This file lives on your local machine only, is never tracked by git, and can be read by Claude Code when needed. Do not create this file inside a repo directory.
