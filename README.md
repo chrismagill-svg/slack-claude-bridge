@@ -1,37 +1,72 @@
 # Slack Claude Bridge
 
-A Netlify serverless function that bridges a Slack slash command to a Claude Code routine.
+A Netlify serverless function that bridges a Slack message shortcut to a Claude Code routine. When triggered, it reads the message (and optionally the full thread) and fires a Claude routine with that context.
 
 ## How it works
 
-1. User runs a slash command in Slack (e.g. `/run-routine some text here`)
-2. Slack POSTs to the Netlify function URL
-3. The function verifies the request is genuinely from Slack, then fires the Claude routine
-4. Slack gets an immediate `200` with a private confirmation message
+1. User clicks **"..."** on any Slack message → selects **Log FAQ**
+2. Slack POSTs the message payload to the Netlify function
+3. The function verifies the request is genuinely from Slack
+4. If a bot token is provided, it fetches the full thread
+5. It fires the Claude routine with the message + thread context
+6. Slack gets an immediate `200` with a private confirmation message
 
-## Environment variables
+## Setup
+
+### 1. Deploy to Netlify
+
+- Connect this repo to a new Netlify site
+- In **Site configuration → Build & deploy → Build settings**, clear the Publish directory field (this is a functions-only site — no build step needed)
+- The functions directory is set automatically via `netlify.toml`
+
+### 2. Environment variables
 
 Set these in Netlify → Site configuration → Environment variables:
 
-| Variable | Where to find it |
-|---|---|
-| `SLACK_SIGNING_SECRET` | Slack app → Basic Information → App Credentials |
-| `CLAUDE_ROUTINE_URL` | The full `/fire` endpoint URL for your Claude Code routine |
-| `CLAUDE_ROUTINE_TOKEN` | The bearer token generated for the API trigger |
+| Variable | Required | Where to find it |
+|---|---|---|
+| `SLACK_SIGNING_SECRET` | Yes | Slack app → Basic Information → App Credentials |
+| `CLAUDE_ROUTINE_URL` | Yes | Claude Code → your routine → API trigger → `/fire` endpoint URL |
+| `CLAUDE_ROUTINE_TOKEN` | Yes | Claude Code → your routine → API trigger → bearer token |
+| `SLACK_BOT_TOKEN` | Optional | Slack app → OAuth & Permissions → Bot User OAuth Token (`xoxb-...`) — enables full thread reading |
 
-## Wiring up the Slack slash command
+### 3. Slack app configuration
 
-1. Go to [api.slack.com/apps](https://api.slack.com/apps) and open your app
-2. In the sidebar, go to **Slash Commands** → **Create New Command**
-3. Fill in:
-   - **Command**: e.g. `/run-routine`
-   - **Request URL**: `https://<your-netlify-site>.netlify.app/.netlify/functions/trigger-claude-routine`
-   - **Short Description**: whatever makes sense for your team
-4. Save, then reinstall the app to your workspace if prompted
-5. Deploy this repo to Netlify and confirm the environment variables are set
+#### Required scopes (OAuth & Permissions → Bot Token Scopes)
+- `commands` — for shortcuts
+- `channels:history` — read public channel threads
+- `groups:history` — read private channel threads (if needed)
 
-## Text sent to the Claude routine
+#### Interactivity & Shortcuts
+1. Turn **Interactivity** on
+2. Set the **Request URL** to:
+   ```
+   https://<your-netlify-site>.netlify.app/.netlify/functions/trigger-claude-routine
+   ```
+3. Under **Shortcuts → Create New Shortcut** → choose **On messages**
+4. Fill in:
+   - **Name**: `Log FAQ`
+   - **Short description**: `Log this message as a FAQ`
+   - **Callback ID**: `log_faq`
+5. Save and reinstall the app to your workspace
 
+### 4. Claude routine
+
+In Claude Code, create a new **Remote** routine with:
+- **Trigger**: Call via API
+- **Instructions**: describe what Claude should do with the FAQ (log to Notion, summarise, etc.)
+
+The routine receives a `text` field in this format:
 ```
-Command: <whatever the user typed> | Triggered by: @username in #channel-name
+Log FAQ request from @username in #channel-name
+
+Message: <the message text>
+
+Full thread:
+@user1: ...
+@user2: ...
 ```
+
+## Usage
+
+Find any message in Slack → click **"..."** → **Log FAQ** → Claude routine fires automatically.
