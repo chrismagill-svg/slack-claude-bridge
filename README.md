@@ -30,6 +30,8 @@ Set these in Netlify → Site configuration → Environment variables:
 | `CLAUDE_ROUTINE_TOKEN` | Yes | Claude Code → your routine → API trigger → bearer token |
 | `SLACK_BOT_TOKEN` | Optional | Slack app → OAuth & Permissions → Bot User OAuth Token (`xoxb-...`) — enables full thread reading |
 
+> **Important:** When adding each variable, check the **"Contains secret values"** checkbox. This masks the value in Netlify's UI and API so it can't be read back even by someone with account access.
+
 ### 3. Slack app configuration
 
 #### Required scopes (OAuth & Permissions → Bot Token Scopes)
